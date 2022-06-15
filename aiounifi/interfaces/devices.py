@@ -1,6 +1,6 @@
 """UniFi devices are network infrastructure.
 
-Access points, Gateways, Switches.
+Access points, gateways, power plugs, switches.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ URL_DEVICE_MANAGER: Final = "/cmd/devmgr"
 class Devices(APIItems):
     """Represents network devices."""
 
-    KEY = "mac"
+    obj_id_key = "mac"
     path = URL
     item_cls = Device
     events = (
@@ -52,6 +52,7 @@ class Devices(APIItems):
         EventKey.SWITCH_UPGRADED,
     )
     messages = (MessageKey.DEVICE,)
+    process_messages = (MessageKey.DEVICE,)
 
     async def upgrade(self, mac: str) -> list[dict]:
         """Upgrade network device."""
