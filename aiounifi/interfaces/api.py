@@ -54,8 +54,7 @@ class APIItems:
         """Process full raw response."""
         new_items = set()
         for raw_item in raw:
-            obj_id = self.process_item(raw_item)
-            if obj_id:
+            if obj_id := self.process_item(raw_item):
                 new_items.add(obj_id)
         return new_items
 

@@ -7,7 +7,7 @@ from http import HTTPStatus
 import logging
 from pprint import pformat
 from ssl import SSLContext
-from typing import Any, Final, Literal
+from typing import Any, Final
 
 import aiohttp
 from aiohttp import client_exceptions
@@ -27,15 +27,13 @@ from .interfaces.dpi_restriction_apps import DPIRestrictionApps
 from .interfaces.dpi_restriction_groups import DPIRestrictionGroups
 from .interfaces.events import EventHandler
 from .interfaces.wlans import Wlans
-from .websocket import (
-    SIGNAL_CONNECTION_STATE,
-    SIGNAL_DATA,
-    SignalLiteral as WSSignalLiteral,
-    StateLiteral as WSStateLiteral,
-    WSClient,
-)
+from .websocket import WebsocketSignal, WebsocketState, WSClient
 
 LOGGER = logging.getLogger(__name__)
+
+# Legacy
+SIGNAL_CONNECTION_STATE = WebsocketSignal.CONNECTION_STATE
+SIGNAL_DATA = WebsocketSignal.DATA
 
 MESSAGE_CLIENT: Final = "sta:sync"
 MESSAGE_CLIENT_REMOVED: Final = "user:delete"
@@ -78,7 +76,7 @@ class Controller:
         port=8443,
         site="default",
         sslcontext: SSLContext | None = None,
-        callback: Callable[[Literal[WSSignalLiteral, WSStateLiteral], dict | str], None]
+        callback: Callable[[WebsocketSignal, dict | WebsocketState], None]
         | None = None,
     ):
         """Session setup."""
@@ -185,7 +183,7 @@ class Controller:
         if self.websocket:
             self.websocket.stop()
 
-    def session_handler(self, signal: WSSignalLiteral) -> None:
+    def session_handler(self, signal: WebsocketSignal) -> None:
         """Signalling from websocket.
 
         data - new data available for processing.
@@ -193,13 +191,13 @@ class Controller:
         """
         assert self.websocket
 
-        if signal == SIGNAL_DATA:
+        if signal == WebsocketSignal.DATA:
             new_items = self.events.handler(self.websocket.data)
             if new_items and self.callback:
-                self.callback(SIGNAL_DATA, new_items)
+                self.callback(WebsocketSignal.DATA, new_items)
 
-        elif signal == SIGNAL_CONNECTION_STATE and self.callback:
-            self.callback(SIGNAL_CONNECTION_STATE, self.websocket.state)
+        elif signal == WebsocketSignal.CONNECTION_STATE and self.callback:
+            self.callback(WebsocketSignal.CONNECTION_STATE, self.websocket.state)
 
     async def request(
         self,
